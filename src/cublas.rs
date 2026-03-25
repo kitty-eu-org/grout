@@ -1,13 +1,13 @@
 use anyhow::{Result, anyhow, ensure};
 use cuda_async::device_operation::{DeviceOperation, value, with_context};
 use cudarc::cublas::{result as cublas_result, sys as cublas_sys};
-use nv_cuda::{IntoResult, sys as cu_sys};
+use cuda_core::{IntoResult, sys as cu_sys};
 use std::cell::RefCell;
 use std::ffi::c_void;
 use std::mem::{MaybeUninit, size_of};
 use std::sync::Arc;
-use tile_rust::half::f16;
-use tile_rust::tensor::Tensor;
+use cutile::half::f16;
+use cutile::tensor::Tensor;
 
 type CublasHandle = usize;
 type StreamKey = (usize, usize);

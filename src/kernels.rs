@@ -39,11 +39,11 @@ pub const TILE_KERNEL_KINDS: [KernelKind; 11] = [
 ];
 
 #[allow(clippy::too_many_arguments)]
-#[tile_rust::module]
+#[cutile::module]
 pub mod kernels {
-    use tile_rust::core::*;
+    use cutile::core::*;
 
-    #[tile_rust::entry(print_ir=false,
+    #[cutile::entry(print_ir=false,
                        optimization_hints = (
                          tensor_dim_factor = 16,
                          sm_120 = (occupancy=1,),
@@ -69,7 +69,7 @@ pub mod kernels {
         z.store(tile_z);
     }
 
-    #[tile_rust::entry(print_ir=false,
+    #[cutile::entry(print_ir=false,
                        optimization_hints = (
                          tensor_dim_factor = 16,
                          sm_120 = (occupancy=1,),
@@ -84,7 +84,7 @@ pub mod kernels {
         out.store(lhs_tile + rhs_tile);
     }
 
-    #[tile_rust::entry(print_ir=false,
+    #[cutile::entry(print_ir=false,
                        optimization_hints = (
                          tensor_dim_factor = 16,
                          sm_120 = (occupancy=1,),
@@ -106,7 +106,7 @@ pub mod kernels {
         out.store(lhs_tile + rhs_tile);
     }
 
-    #[tile_rust::entry(print_ir=false,
+    #[cutile::entry(print_ir=false,
                        optimization_hints = (
                          tensor_dim_factor = 16,
                          sm_120 = (occupancy=1,),
@@ -131,7 +131,7 @@ pub mod kernels {
         out.store(y_f16);
     }
 
-    #[tile_rust::entry(print_ir=false,
+    #[cutile::entry(print_ir=false,
                        optimization_hints = (
                          tensor_dim_factor = 16,
                          sm_120 = (occupancy=1,),
@@ -163,7 +163,7 @@ pub mod kernels {
         out.store(y_f16);
     }
 
-    #[tile_rust::entry(print_ir=false,
+    #[cutile::entry(print_ir=false,
                        optimization_hints = (
                          tensor_dim_factor = 16,
                          sm_120 = (occupancy=1,),
@@ -209,7 +209,7 @@ pub mod kernels {
         }
     }
 
-    #[tile_rust::entry(print_ir=false,
+    #[cutile::entry(print_ir=false,
                        optimization_hints = (
                          tensor_dim_factor = 16,
                          sm_120 = (occupancy=1,),
@@ -261,7 +261,7 @@ pub mod kernels {
         block_idx.store(out_idx_tile);
     }
 
-    #[tile_rust::entry(print_ir=false,
+    #[cutile::entry(print_ir=false,
                        optimization_hints = (
                          tensor_dim_factor = 16,
                          sm_120 = (occupancy=1,),
@@ -279,7 +279,7 @@ pub mod kernels {
         out.store(tile.reshape(const_shape![BLOCK_SIZE]));
     }
 
-    #[tile_rust::entry(print_ir=false,
+    #[cutile::entry(print_ir=false,
                        optimization_hints = (
                          tensor_dim_factor = 16,
                          sm_120 = (occupancy=1,),
@@ -317,7 +317,7 @@ pub mod kernels {
         }
     }
 
-    #[tile_rust::entry(print_ir=false,
+    #[cutile::entry(print_ir=false,
                        optimization_hints = (
                          tensor_dim_factor = 16,
                          sm_120 = (occupancy=1,),
@@ -362,7 +362,7 @@ pub mod kernels {
         }
     }
 
-    #[tile_rust::entry(print_ir=false,
+    #[cutile::entry(print_ir=false,
                        optimization_hints = (
                          tensor_dim_factor = 16,
                          sm_120 = (occupancy=1,),
@@ -412,7 +412,7 @@ pub mod kernels {
         }
     }
 
-    #[tile_rust::entry(print_ir=false,
+    #[cutile::entry(print_ir=false,
                        optimization_hints = (
                          tensor_dim_factor = 16,
                          sm_120 = (occupancy=1,),
@@ -439,7 +439,7 @@ pub mod kernels {
         }
     }
 
-    #[tile_rust::entry(print_ir=false,
+    #[cutile::entry(print_ir=false,
                        optimization_hints = (
                          tensor_dim_factor = 16,
                          sm_120 = (occupancy=1,),
@@ -464,7 +464,7 @@ pub mod kernels {
         out.store(emb);
     }
 
-    #[tile_rust::entry(print_ir=false,
+    #[cutile::entry(print_ir=false,
                        optimization_hints = (
                          tensor_dim_factor = 16,
                          sm_120 = (occupancy=1,),
@@ -497,7 +497,7 @@ pub mod kernels {
         }
     }
 
-    #[tile_rust::entry(print_ir=false,
+    #[cutile::entry(print_ir=false,
                        optimization_hints = (
                          tensor_dim_factor = 16,
                          sm_120 = (occupancy=1,),
@@ -534,7 +534,7 @@ pub mod kernels {
         }
     }
 
-    #[tile_rust::entry(print_ir=false,
+    #[cutile::entry(print_ir=false,
                        optimization_hints = (
                          tensor_dim_factor = 16,
                          sm_120 = (occupancy=1,),
@@ -576,7 +576,7 @@ pub mod kernels {
         }
     }
 
-    #[tile_rust::entry(print_ir=false,
+    #[cutile::entry(print_ir=false,
                        unchecked_accesses=true,
                        optimization_hints = (
                          tensor_dim_factor = 16,
@@ -663,7 +663,7 @@ pub mod kernels {
         out.store(acc);
     }
 
-    #[tile_rust::entry(print_ir=false,
+    #[cutile::entry(print_ir=false,
                        unchecked_accesses=true,
                        optimization_hints = (
                          tensor_dim_factor = 16,
@@ -760,7 +760,7 @@ pub mod kernels {
         out.store(acc);
     }
 
-    #[tile_rust::entry(print_ir=false,
+    #[cutile::entry(print_ir=false,
                        unchecked_accesses=true,
                        optimization_hints = (
                          tensor_dim_factor = 16,
@@ -857,7 +857,7 @@ pub mod kernels {
         out.store(acc);
     }
 
-    #[tile_rust::entry(print_ir=false,
+    #[cutile::entry(print_ir=false,
                        unchecked_accesses=true,
                        optimization_hints = (
                          tensor_dim_factor = 16,

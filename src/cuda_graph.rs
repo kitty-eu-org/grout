@@ -1,5 +1,5 @@
 use anyhow::{Result, anyhow, bail};
-use nv_cuda::{CudaStream, DriverError, IntoResult, stream, sys};
+use cuda_core::{CudaStream, DriverError, IntoResult, stream, sys};
 use std::mem::MaybeUninit;
 use std::sync::Arc;
 

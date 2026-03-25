@@ -6,10 +6,10 @@ use std::collections::{HashMap, HashSet};
 use std::fs::File;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
-use tile_rust::api;
-use tile_rust::api::DeviceOperationDynamicReshape;
-use tile_rust::half::{bf16, f16};
-use tile_rust::tensor::Tensor;
+use cutile::api;
+use cutile::api::DeviceOperationDynamicReshape;
+use cutile::half::{bf16, f16};
+use cutile::tensor::Tensor;
 
 #[derive(Debug)]
 pub struct HostTensor {
@@ -85,7 +85,7 @@ impl WeightLoader {
         let host_data = Arc::new(host.data);
         let device_tensor = api::copy_host_vec_to_device(&host_data)
             .reshape_dyn(shape)
-            .await;
+            .await?;
         Ok(Arc::new(device_tensor))
     }
 }

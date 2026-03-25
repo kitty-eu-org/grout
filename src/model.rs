@@ -11,7 +11,7 @@ use crate::kernels::{
 use crate::loader::WeightLoader;
 use anyhow::{Context, Result, bail, ensure};
 use cuda_async::device_operation::{DeviceOperation, ExecutionContext, value, with_context};
-use nv_cuda::memcpy_htod_async;
+use cuda_core::memcpy_htod_async;
 use rand::Rng;
 use std::cmp::{Reverse, min};
 use std::collections::HashMap;
@@ -20,10 +20,10 @@ use std::mem::size_of;
 use std::path::Path;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
-use tile_rust::api;
-use tile_rust::half::f16;
-use tile_rust::tensor::{IntoPartition, IntoPartitionArc, Partition, Tensor, ToHostVec};
-use tile_rust::tile_kernel::{IntoDeviceOperationPartition, TileKernel};
+use cutile::api;
+use cutile::half::f16;
+use cutile::tensor::{IntoPartition, IntoPartitionArc, Partition, Tensor, ToHostVec};
+use cutile::tile_kernel::{IntoDeviceOperationPartition, TileKernel};
 use tokenizers::Tokenizer;
 
 const VEC_BLOCK: usize = 128;
@@ -546,9 +546,9 @@ impl TensorPool {
 
 fn alloc_f16_ctx(ctx: &ExecutionContext, shape: &[usize]) -> Result<Tensor<f16>> {
     let out = match shape {
-        [d0] => unsafe { api::zeros::<1, f16>([*d0]).execute(ctx) },
-        [d0, d1] => unsafe { api::zeros::<2, f16>([*d0, *d1]).execute(ctx) },
-        [d0, d1, d2] => unsafe { api::zeros::<3, f16>([*d0, *d1, *d2]).execute(ctx) },
+        [d0] => unsafe { api::zeros::<1, f16>([*d0]).execute(ctx)? },
+        [d0, d1] => unsafe { api::zeros::<2, f16>([*d0, *d1]).execute(ctx)? },
+        [d0, d1, d2] => unsafe { api::zeros::<3, f16>([*d0, *d1, *d2]).execute(ctx)? },
         _ => bail!(
             "unsupported f16 tensor rank {} for shape {:?}",
             shape.len(),
@@ -882,9 +882,9 @@ impl Qwen3Engine {
             };
 
             let k_cache =
-                api::zeros::<3, f16>([cfg.num_key_value_heads, max_seq_len, cfg.head_dim]).await;
+                api::zeros::<3, f16>([cfg.num_key_value_heads, max_seq_len, cfg.head_dim]).await?;
             let v_cache =
-                api::zeros::<3, f16>([cfg.num_key_value_heads, max_seq_len, cfg.head_dim]).await;
+                api::zeros::<3, f16>([cfg.num_key_value_heads, max_seq_len, cfg.head_dim]).await?;
             layers.push(Layer {
                 weights,
                 state: LayerState {
@@ -955,10 +955,10 @@ impl Qwen3Engine {
             return Ok(());
         }
 
-        self.reset_cache().await;
+        self.reset_cache().await?;
         with_context(|ctx| value(self.warm_tile_kernels_ctx(ctx))).await?;
 
-        self.reset_cache().await;
+        self.reset_cache().await?;
         Ok(())
     }
 
@@ -974,23 +974,23 @@ impl Qwen3Engine {
     }
 
     fn warm_decode_graph_kernels_ctx(&mut self, ctx: &ExecutionContext) -> Result<()> {
-        let pos = Arc::new(unsafe { api::zeros::<1, u32>([1]).execute(ctx) });
+        let pos = Arc::new(unsafe { api::zeros::<1, u32>([1]).execute(ctx)? });
         let x = Arc::new(unsafe {
-            api::zeros::<3, f16>([1, self.cfg.num_attention_heads, self.cfg.head_dim]).execute(ctx)
+            api::zeros::<3, f16>([1, self.cfg.num_attention_heads, self.cfg.head_dim]).execute(ctx)?
         });
         let x_out = alloc_f16_ctx(ctx, &[1, self.cfg.num_attention_heads, self.cfg.head_dim])?;
         let _ = self.rope_seq_arc_into_ctx_device_pos(ctx, x, pos.clone(), x_out)?;
 
         let new_k = Arc::new(unsafe {
-            api::zeros::<3, f16>([1, self.cfg.num_key_value_heads, self.cfg.head_dim]).execute(ctx)
+            api::zeros::<3, f16>([1, self.cfg.num_key_value_heads, self.cfg.head_dim]).execute(ctx)?
         });
         let new_v = Arc::new(unsafe {
-            api::zeros::<3, f16>([1, self.cfg.num_key_value_heads, self.cfg.head_dim]).execute(ctx)
+            api::zeros::<3, f16>([1, self.cfg.num_key_value_heads, self.cfg.head_dim]).execute(ctx)?
         });
         self.kv_cache_update_seq_arc_ctx_device_pos(ctx, 0, new_k, new_v, pos.clone())?;
 
         let q = Arc::new(unsafe {
-            api::zeros::<3, f16>([1, self.cfg.num_attention_heads, self.cfg.head_dim]).execute(ctx)
+            api::zeros::<3, f16>([1, self.cfg.num_attention_heads, self.cfg.head_dim]).execute(ctx)?
         });
         let q_out = alloc_f16_ctx(ctx, &[1, self.cfg.num_attention_heads, self.cfg.head_dim])?;
         let _ = self.attend_seq_arc_into_ctx_device_pos(ctx, 0, q, pos, q_out)?;
@@ -1015,40 +1015,40 @@ impl Qwen3Engine {
                 let _ = self.embedding_batch_ctx(ctx, &warm_ids)?;
             }
             KernelKind::Gemm => {
-                let x = unsafe { api::zeros::<2, f16>([1, self.cfg.hidden_size]).execute(ctx) };
+                let x = unsafe { api::zeros::<2, f16>([1, self.cfg.hidden_size]).execute(ctx)? };
                 let x = Arc::new(x);
                 let q_proj = self.layers[0].weights.q_proj.clone();
                 let _ = self.gemm_ctx(ctx, q_proj, x)?;
             }
             KernelKind::Gemv => {
-                let v = unsafe { api::zeros::<1, f16>([self.cfg.hidden_size]).execute(ctx) };
+                let v = unsafe { api::zeros::<1, f16>([self.cfg.hidden_size]).execute(ctx)? };
                 let v = Arc::new(v);
                 let _ = self.gemv_ctx(ctx, self.embed_tokens.clone(), v)?;
             }
             KernelKind::RmsNorm => {
                 let hidden =
-                    unsafe { api::zeros::<2, f16>([1, self.cfg.hidden_size]).execute(ctx) };
+                    unsafe { api::zeros::<2, f16>([1, self.cfg.hidden_size]).execute(ctx)? };
                 let _ = self.rms_norm_ctx(ctx, hidden, self.norm.clone(), self.cfg.hidden_size)?;
 
                 let q_norm = self.layers[0].weights.q_norm.clone();
-                let head = unsafe { api::zeros::<2, f16>([1, self.cfg.head_dim]).execute(ctx) };
+                let head = unsafe { api::zeros::<2, f16>([1, self.cfg.head_dim]).execute(ctx)? };
                 let _ = self.rms_norm_ctx(ctx, head, q_norm, self.cfg.head_dim)?;
             }
             KernelKind::RopeSeq => {
                 let q = unsafe {
                     api::zeros::<3, f16>([1, self.cfg.num_attention_heads, self.cfg.head_dim])
-                        .execute(ctx)
+                        .execute(ctx)?
                 };
                 let _ = self.rope_seq_ctx(ctx, q, 0)?;
             }
             KernelKind::KvCacheUpdateSeq => {
                 let new_k = unsafe {
                     api::zeros::<3, f16>([1, self.cfg.num_key_value_heads, self.cfg.head_dim])
-                        .execute(ctx)
+                        .execute(ctx)?
                 };
                 let new_v = unsafe {
                     api::zeros::<3, f16>([1, self.cfg.num_key_value_heads, self.cfg.head_dim])
-                        .execute(ctx)
+                        .execute(ctx)?
                 };
                 self.kv_cache_update_seq_ctx(ctx, 0, new_k, new_v, 0)?;
             }
@@ -1064,38 +1064,38 @@ impl Qwen3Engine {
                             self.cfg.num_attention_heads,
                             self.cfg.head_dim,
                         ])
-                        .execute(ctx)
+                        .execute(ctx)?
                     };
                     let _ = self.attend_seq_ctx(ctx, 0, q, 0)?;
                 }
             }
             KernelKind::AddVec => {
                 let lhs = Arc::new(unsafe {
-                    api::zeros::<2, f16>([1, self.cfg.hidden_size]).execute(ctx)
+                    api::zeros::<2, f16>([1, self.cfg.hidden_size]).execute(ctx)?
                 });
                 let rhs = Arc::new(unsafe {
-                    api::zeros::<2, f16>([1, self.cfg.hidden_size]).execute(ctx)
+                    api::zeros::<2, f16>([1, self.cfg.hidden_size]).execute(ctx)?
                 });
                 let _ = self.add_2d_ctx(ctx, lhs, rhs)?;
             }
             KernelKind::SiluMul => {
                 let gate = Arc::new(unsafe {
-                    api::zeros::<2, f16>([1, self.cfg.intermediate_size]).execute(ctx)
+                    api::zeros::<2, f16>([1, self.cfg.intermediate_size]).execute(ctx)?
                 });
                 let up = Arc::new(unsafe {
-                    api::zeros::<2, f16>([1, self.cfg.intermediate_size]).execute(ctx)
+                    api::zeros::<2, f16>([1, self.cfg.intermediate_size]).execute(ctx)?
                 });
                 let _ = self.silu_mul_2d_ctx(ctx, gate, up)?;
             }
             KernelKind::GatherRow => {
                 let src = Arc::new(unsafe {
-                    api::zeros::<2, f16>([1, self.cfg.hidden_size]).execute(ctx)
+                    api::zeros::<2, f16>([1, self.cfg.hidden_size]).execute(ctx)?
                 });
                 let _ = self.gather_row_ctx(ctx, src, 0)?;
             }
             KernelKind::ArgmaxBlocks => {
                 let logits =
-                    Arc::new(unsafe { api::zeros::<1, f16>([self.cfg.vocab_size]).execute(ctx) });
+                    Arc::new(unsafe { api::zeros::<1, f16>([self.cfg.vocab_size]).execute(ctx)? });
                 let _ = self.argmax_blocks_ctx(ctx, logits, self.cfg.vocab_size)?;
             }
         }
@@ -1104,7 +1104,7 @@ impl Qwen3Engine {
         Ok(())
     }
 
-    pub async fn reset_cache(&mut self) {
+    pub async fn reset_cache(&mut self) -> Result<()> {
         for layer in &mut self.layers {
             layer.state.k_cache = Some(Arc::new(
                 api::zeros::<3, f16>([
@@ -1112,7 +1112,7 @@ impl Qwen3Engine {
                     self.max_seq_len,
                     self.cfg.head_dim,
                 ])
-                .await,
+                .await?,
             ));
             layer.state.v_cache = Some(Arc::new(
                 api::zeros::<3, f16>([
@@ -1120,9 +1120,10 @@ impl Qwen3Engine {
                     self.max_seq_len,
                     self.cfg.head_dim,
                 ])
-                .await,
+                .await?,
             ));
         }
+        Ok(())
     }
 
     pub fn encode_prompt(&self, prompt: &str) -> Result<Vec<u32>> {
@@ -1144,7 +1145,7 @@ impl Qwen3Engine {
         } else {
             self.active_profile = None;
         }
-        self.reset_cache().await;
+        self.reset_cache().await?;
         let prompt = self.maybe_apply_chat_template(prompt);
         let prompt_ids = self.encode_prompt(&prompt)?;
         if prompt_ids.is_empty() {
@@ -1165,7 +1166,7 @@ impl Qwen3Engine {
         self.profile_step(step_start.elapsed(), false);
         let prompt_elapsed = prompt_start.elapsed();
         if debug_logits {
-            let logits_host = logits.clone().to_host_vec().await;
+            let logits_host = logits.clone().to_host_vec().await?;
             eprintln!(
                 "prefill logits: {}",
                 summarize_logits(&logits_host, &self.tokenizer)?
@@ -1176,7 +1177,7 @@ impl Qwen3Engine {
         let use_cuda_graph_decode =
             env_bool_or("GROUT_CUDA_GRAPH_DECODE", false) && max_new_tokens > 0;
         let mut decode_graph_runner = if use_cuda_graph_decode {
-            let stream = with_context(|ctx| value(ctx.get_cuda_stream().clone())).await;
+            let stream = with_context(|ctx| value(ctx.get_cuda_stream().clone())).await?;
             let capture_ctx = ExecutionContext::new(stream);
             match self.build_decode_graph_runner_ctx(&capture_ctx, cur_pos) {
                 Ok(runner) => Some(runner),
@@ -1196,12 +1197,12 @@ impl Qwen3Engine {
         let mut rng = rand::thread_rng();
         for _ in 0..max_new_tokens {
             let next = if self.do_sample {
-                let logits_host = logits.clone().to_host_vec().await;
+                let logits_host = logits.clone().to_host_vec().await?;
                 self.sample_next(&logits_host, &mut rng)? as u32
             } else if self.use_device_argmax {
                 self.argmax_device(logits.clone()).await? as u32
             } else {
-                let logits_host = logits.clone().to_host_vec().await;
+                let logits_host = logits.clone().to_host_vec().await?;
                 argmax_f16(&logits_host) as u32
             };
             if self.eos_token_ids.contains(&next) {
@@ -1234,7 +1235,7 @@ impl Qwen3Engine {
             }
             self.profile_step(step_start.elapsed(), true);
             if debug_logits {
-                let logits_host = logits.clone().to_host_vec().await;
+                let logits_host = logits.clone().to_host_vec().await?;
                 eprintln!(
                     "decode@{} logits: {}",
                     cur_pos,
@@ -1341,7 +1342,7 @@ impl Qwen3Engine {
         token_ids: &[u32],
         position_start: usize,
     ) -> Result<Arc<Tensor<f16>>> {
-        with_context(|ctx| value(self.step_seq_await_ctx(ctx, token_ids, position_start))).await
+        with_context(|ctx| value(self.step_seq_await_ctx(ctx, token_ids, position_start))).await?
     }
 
     fn step_seq_await_ctx(
@@ -1405,9 +1406,9 @@ impl Qwen3Engine {
         let token_init = Arc::new(vec![token_host[0]]);
         let position_init = Arc::new(vec![position_host[0]]);
         let token_ids_device =
-            Arc::new(unsafe { api::copy_host_vec_to_device(&token_init).execute(ctx) });
+            Arc::new(unsafe { api::copy_host_vec_to_device(&token_init).execute(ctx)? });
         let position_device =
-            Arc::new(unsafe { api::copy_host_vec_to_device(&position_init).execute(ctx) });
+            Arc::new(unsafe { api::copy_host_vec_to_device(&position_init).execute(ctx)? });
 
         // Prime stream-local allocations and pool bins before capture so replay does not
         // rely on first-launch allocation side effects.
@@ -1841,7 +1842,7 @@ impl Qwen3Engine {
                             .cloned()
                             .context("missing reshape input value")?
                     };
-                    let reshaped = self.take_or_copy_f16_ctx(ctx, src).reshape_dyn(shape);
+                    let reshaped = self.take_or_copy_f16_ctx(ctx, src)?.reshape_dyn(shape);
                     values[out.idx()] = Some(Arc::new(reshaped));
                 }
                 GraphOp::Rope { x, out } => {
@@ -2030,7 +2031,7 @@ impl Qwen3Engine {
                 && input != graph.final_value
                 && let Some(tensor) = values[idx].take()
             {
-                let tensor = self.take_or_copy_f16_ctx(ctx, tensor);
+                let tensor = self.take_or_copy_f16_ctx(ctx, tensor)?;
                 pool.checkin(tensor, graph.spec(input))?;
             }
         }
@@ -2076,13 +2077,13 @@ impl Qwen3Engine {
         }
     }
 
-    fn copy_f16_ctx(&self, ctx: &ExecutionContext, src: &Arc<Tensor<f16>>) -> Tensor<f16> {
-        unsafe { api::copy(src).execute(ctx) }
+    fn copy_f16_ctx(&self, ctx: &ExecutionContext, src: &Arc<Tensor<f16>>) -> Result<Tensor<f16>> {
+        Ok(unsafe { api::copy(src).execute(ctx)? })
     }
 
-    fn take_or_copy_f16_ctx(&self, ctx: &ExecutionContext, src: Arc<Tensor<f16>>) -> Tensor<f16> {
+    fn take_or_copy_f16_ctx(&self, ctx: &ExecutionContext, src: Arc<Tensor<f16>>) -> Result<Tensor<f16>> {
         match Arc::try_unwrap(src) {
-            Ok(t) => t,
+            Ok(t) => Ok(t),
             Err(shared) => self.copy_f16_ctx(ctx, &shared),
         }
     }
@@ -2118,7 +2119,7 @@ impl Qwen3Engine {
         );
 
         let ids_host = Arc::new(token_ids.to_vec());
-        let ids = unsafe { api::copy_host_vec_to_device(&ids_host).execute(ctx) };
+        let ids = unsafe { api::copy_host_vec_to_device(&ids_host).execute(ctx)? };
         let out = out.partition([1, VEC_BLOCK as i32]);
         let result = unsafe {
             embedding_batch_f16_async(
@@ -2130,7 +2131,7 @@ impl Qwen3Engine {
                 self.cfg.hidden_size.to_string(),
                 VEC_BLOCK.to_string(),
             ])
-            .execute(ctx)
+            .execute(ctx)?
         };
         let _ids: Arc<Tensor<u32>> = result.0;
         let out: Partition<Tensor<f16>> = result.2;
@@ -2170,7 +2171,7 @@ impl Qwen3Engine {
                 self.cfg.hidden_size.to_string(),
                 VEC_BLOCK.to_string(),
             ])
-            .execute(ctx)
+            .execute(ctx)?
         };
         let out: Partition<Tensor<f16>> = result.2;
         Ok(out.unpartition())
@@ -2219,7 +2220,7 @@ impl Qwen3Engine {
             out.shape
         );
         let op = cublas::gemv_f16_op(matrix, vector, out, m, k)?;
-        unsafe { op.execute(ctx) }
+        unsafe { op.execute(ctx)? }
     }
 
     fn gemm_ctx(
@@ -2271,7 +2272,7 @@ impl Qwen3Engine {
             out.shape
         );
         let op = cublas::gemm_f16_op(matrix, rhs, out, m, n, k)?;
-        unsafe { op.execute(ctx) }
+        unsafe { op.execute(ctx)? }
     }
 
     fn add_2d_ctx(
@@ -2310,7 +2311,7 @@ impl Qwen3Engine {
         let result = unsafe {
             add_2d_f16_async(value(out), value(lhs), value(rhs))
                 .generics(vec![POINTWISE_BLOCK.to_string()])
-                .execute(ctx)
+                .execute(ctx)?
         };
         let out: Partition<Tensor<f16>> = result.0;
         Ok(out.unpartition())
@@ -2352,7 +2353,7 @@ impl Qwen3Engine {
         let result = unsafe {
             silu_mul_2d_f16_async(value(out), value(gate), value(up))
                 .generics(vec![POINTWISE_BLOCK.to_string()])
-                .execute(ctx)
+                .execute(ctx)?
         };
         let out: Partition<Tensor<f16>> = result.0;
         Ok(out.unpartition())
@@ -2400,7 +2401,7 @@ impl Qwen3Engine {
         let (x, rows) = match orig_shape.as_slice() {
             [d] => {
                 ensure!(*d == n, "rms_norm expected dim {n}, got {d}");
-                (Arc::new(self.copy_f16_ctx(ctx, &x).reshape([1, n])), 1)
+                (Arc::new(self.copy_f16_ctx(ctx, &x)?.reshape([1, n])), 1)
             }
             [r, d] => {
                 ensure!(*d == n, "rms_norm expected inner dim {n}, got {d}");
@@ -2426,7 +2427,7 @@ impl Qwen3Engine {
                 value(self.cfg.rms_norm_eps),
             )
             .generics(vec![n.to_string(), RMS_BLOCK.to_string()])
-            .execute(ctx)
+            .execute(ctx)?
         };
         let _x: Arc<Tensor<f16>> = result.0;
         let out: Partition<Tensor<f16>> = result.2;
@@ -2516,7 +2517,7 @@ impl Qwen3Engine {
                         self.cfg.head_dim.to_string(),
                         (self.cfg.head_dim / 2).to_string(),
                     ])
-                    .execute(ctx)
+                    .execute(ctx)?
                 };
                 result.2
             }
@@ -2532,7 +2533,7 @@ impl Qwen3Engine {
                         self.cfg.head_dim.to_string(),
                         (self.cfg.head_dim / 2).to_string(),
                     ])
-                    .execute(ctx)
+                    .execute(ctx)?
                 };
                 result.3
             }
@@ -2682,7 +2683,7 @@ impl Qwen3Engine {
                             VEC_BLOCK.to_string(),
                             self.max_seq_len.to_string(),
                         ])
-                        .execute(ctx)
+                        .execute(ctx)?
                     };
                     (result.2, result.3)
                 }
@@ -2701,7 +2702,7 @@ impl Qwen3Engine {
                             VEC_BLOCK.to_string(),
                             self.max_seq_len.to_string(),
                         ])
-                        .execute(ctx)
+                        .execute(ctx)?
                     };
                     (result.2, result.3)
                 }
@@ -2843,7 +2844,7 @@ impl Qwen3Engine {
                     attn_bn.to_string(),
                     self.cfg.head_dim.to_string(),
                 ]);
-                let result = unsafe { result.execute(ctx) };
+                let result = unsafe { result.execute(ctx)? };
                 result.3
             }
             PositionInput::Device(position_start) => {
@@ -2863,7 +2864,7 @@ impl Qwen3Engine {
                     attn_bn.to_string(),
                     self.cfg.head_dim.to_string(),
                 ]);
-                let result = unsafe { result.execute(ctx) };
+                let result = unsafe { result.execute(ctx)? };
                 result.3
             }
         };
@@ -2906,7 +2907,7 @@ impl Qwen3Engine {
         let result = unsafe {
             gather_row_f16_async(value(src), value(out), value(row_idx as i32))
                 .generics(vec![VEC_BLOCK.to_string()])
-                .execute(ctx)
+                .execute(ctx)?
         };
         let out: Partition<Tensor<f16>> = result.1;
         Ok(out.unpartition())
@@ -2930,7 +2931,7 @@ impl Qwen3Engine {
         let result = unsafe {
             argmax_blocks_f16_async(value(logits), block_max, block_idx, value(len as i32))
                 .generics(vec![ARGMAX_BLOCK.to_string()])
-                .execute(ctx)
+                .execute(ctx)?
         };
         let block_max: Partition<Tensor<f32>> = result.1;
         let block_idx: Partition<Tensor<u32>> = result.2;
@@ -2946,14 +2947,14 @@ impl Qwen3Engine {
         let len = logits.shape[0] as usize;
         ensure!(len > 0, "argmax expects non-empty logits");
         if !len.is_multiple_of(ARGMAX_BLOCK) {
-            let host = logits.to_host_vec().await;
+            let host = logits.to_host_vec().await?;
             return Ok(argmax_f16(&host));
         }
 
         let (block_max, block_idx) =
-            with_context(|ctx| value(self.argmax_blocks_ctx(ctx, logits, len))).await?;
-        let host_max = block_max.to_host_vec().await;
-        let host_idx = block_idx.to_host_vec().await;
+            with_context(|ctx| value(self.argmax_blocks_ctx(ctx, logits, len))).await??;
+        let host_max: Vec<f32> = block_max.to_host_vec().await?;
+        let host_idx: Vec<u32> = block_idx.to_host_vec().await?;
         let num_blocks = host_max.len();
 
         let mut best_val = f32::NEG_INFINITY;
@@ -2996,7 +2997,7 @@ async fn build_inv_freq(cfg: &Qwen3Config) -> Result<Arc<Tensor<f32>>> {
         inv.push(1.0f32 / cfg.rope_theta.powf(p));
     }
     let inv = Arc::new(inv);
-    Ok(Arc::new(api::copy_host_vec_to_device(&inv).await))
+    Ok(Arc::new(api::copy_host_vec_to_device(&inv).await?))
 }
 
 async fn load_layer_weight(
