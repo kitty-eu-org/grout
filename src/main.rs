@@ -4,7 +4,7 @@ use grout::model::Qwen3Engine;
 use std::path::PathBuf;
 
 #[derive(Parser, Debug)]
-#[command(author, version, about = "Qwen3-4B inference prototype on cuda-tile")]
+#[command(author, version, about = "Qwen3 inference on cutile-rs")]
 struct Args {
     #[arg(long)]
     model: PathBuf,
@@ -48,9 +48,9 @@ async fn main() -> Result<()> {
     println!();
     println!("{}", output.text);
     println!(
-        "t/s: {:.2} prompt, {:.2} decode, {:.2} end-to-end (prompt_tokens={}, generated_tokens={}, prompt_s={:.3}, decode_s={:.3}, total_s={:.3})",
+        "t/s: {:.2} prompt, {:.2} decode phase, {:.2} end-to-end (prompt_tokens={}, generated_tokens={}, prompt_s={:.3}, decode_s={:.3}, total_s={:.3})",
         output.prompt_tps(),
-        output.decode_tps(),
+        output.decode_phase_tps(),
         output.total_tps(),
         output.prompt_tokens,
         output.generated_tokens,
