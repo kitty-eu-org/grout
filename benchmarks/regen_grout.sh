@@ -4,13 +4,13 @@
 #
 # Usage:  ./regen_grout.sh <sweep-dir>  [tg1 tg2 ...]
 # Example:
-#   ./regen_grout.sh paper-benchmarks/results/sweep/20260420_151333
-#   ./regen_grout.sh paper-benchmarks/results/sweep/20260420_151333 36 128 512
+#   ./regen_grout.sh benchmarks/results/sweep/20260420_151333
+#   ./regen_grout.sh benchmarks/results/sweep/20260420_151333 36 128 512
 #
 # Grout is invoked with whatever env you've already exported (e.g.
 # GROUT_FMHA_SPLIT_KV=1, GROUT_FMHA_NUM_KV_SPLITS=4). The script does NOT
 # set those itself — you run it like:
-#   GROUT_FMHA_SPLIT_KV=1 ./regen_grout.sh paper-benchmarks/results/sweep/...
+#   GROUT_FMHA_SPLIT_KV=1 ./regen_grout.sh benchmarks/results/sweep/...
 
 set -euo pipefail
 
@@ -39,7 +39,7 @@ BENCH_REPS=10
 WARMUP_REPS=3
 
 # Build grout (auto-rebuild if stale).
-(cd "$GROUT_DIR" && cargo build --release --features paper-benchmarks --bin grout_bench 2>&1 | tail -3)
+(cd "$GROUT_DIR" && cargo build --release --features benchmarks --bin grout_bench 2>&1 | tail -3)
 
 # Strip existing grout records. Keep a backup just in case.
 cp "$JSONL" "$JSONL.bak.$(date +%s)"

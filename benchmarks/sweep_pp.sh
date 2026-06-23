@@ -167,7 +167,7 @@ fi
 # --------------------------------------------------------------------------
 log "Benchmark: grout"
 if [[ -f "$GROUT_DIR/Cargo.toml" ]]; then
-    (cd "$GROUT_DIR" && cargo build --release --features paper-benchmarks --bin grout_bench 2>&1 | tail -3)
+    (cd "$GROUT_DIR" && cargo build --release --features benchmarks --bin grout_bench 2>&1 | tail -3)
 
     # Prefill tile dispatch — must match prefill_tile_by_pp in src/model.rs.
     # Tuned from the 2026-04-20 sweep over pp ∈ {18, 128, 512, 2048}. Clean crossover

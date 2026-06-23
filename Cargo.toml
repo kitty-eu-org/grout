@@ -25,7 +25,7 @@ cutile-compiler = "0.2.0"
 cutile = "0.2.0"
 
 [features]
-paper-benchmarks = []
+benchmarks = []
 
 [[bin]]
 name = "grout"
@@ -33,20 +33,20 @@ path = "src/main.rs"
 
 [[bin]]
 name = "grout_bench"
-path = "paper-benchmarks/src/bin/grout_bench.rs"
-required-features = ["paper-benchmarks"]
+path = "benchmarks/src/bin/grout_bench.rs"
+required-features = ["benchmarks"]
 
 [[bin]]
 name = "attention_microbench"
-path = "paper-benchmarks/src/bin/attention_microbench.rs"
-required-features = ["paper-benchmarks"]
+path = "benchmarks/src/bin/attention_microbench.rs"
+required-features = ["benchmarks"]
 
 [[bin]]
 name = "gemv_microbench"
-path = "paper-benchmarks/src/bin/gemv_microbench.rs"
-required-features = ["paper-benchmarks"]
+path = "benchmarks/src/bin/gemv_microbench.rs"
+required-features = ["benchmarks"]
 
 [[bin]]
 name = "group_gemm_microbench"
-path = "paper-benchmarks/src/bin/group_gemm_microbench.rs"
-required-features = ["paper-benchmarks"]
+path = "benchmarks/src/bin/group_gemm_microbench.rs"
+required-features = ["benchmarks"]

@@ -122,7 +122,7 @@ const ATTN_BM_DECODE: usize = 1;
 // at kv_len≈54 showed {16, 32, 64, 128} within ~1%; 16 was the most
 // consistent run-to-run. BN=256 regressed 13% from lane overhang. At
 // long kv_len the winner may shift — re-sweep via
-// ./paper-benchmarks/sweep_tg_tile.sh. Override with GROUT_ATTN_BN_DECODE.
+// ./benchmarks/sweep_tg_tile.sh. Override with GROUT_ATTN_BN_DECODE.
 const ATTN_BN_DECODE: usize = 16;
 // Split-K decode parallelism: kv_len split into NUM_KV_SPLITS chunks,
 // each handled by a separate CTA. 8 tuned at tg=512; short kv prefers

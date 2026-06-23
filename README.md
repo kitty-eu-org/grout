@@ -104,22 +104,22 @@ cuBLAS handles the linear projections (GEMM/GEMV) via `cublas.rs`.
 
 ## Benchmarking
 
-The paper-facing benchmark harness lives in [`paper-benchmarks/`](paper-benchmarks/README.md).
+The paper-facing benchmark harness lives in [`benchmarks/`](benchmarks/README.md).
 It compares Grout against SGLang and vLLM by default, with llama.cpp and
 TRT-LLM available as opt-in baselines.
 
 Run the current RTX 5090 / sm_120 sweeps from the repository root:
 
 ```bash
-./paper-benchmarks/sweep_tg_sm120.sh
-./paper-benchmarks/sweep_pp_sm120.sh
+./benchmarks/sweep_tg_sm120.sh
+./benchmarks/sweep_pp_sm120.sh
 ```
 
 Run the B200 / sm_100 profile by overriding the model path as needed:
 
 ```bash
-MODEL_HF=../hf_models/qwen3_32b ./paper-benchmarks/sweep_tg_sm100.sh
-MODEL_HF=../hf_models/qwen3_32b ./paper-benchmarks/sweep_pp_sm100.sh
+MODEL_HF=../hf_models/qwen3_32b ./benchmarks/sweep_tg_sm100.sh
+MODEL_HF=../hf_models/qwen3_32b ./benchmarks/sweep_pp_sm100.sh
 ```
 
 The sweep scripts use driver-controlled clocks by default. They still accept
@@ -132,19 +132,19 @@ The paper-facing numbers live in the sweep aggregates, not in manually updated
 tables. Use `aggregate.csv` for plots and `aggregate.md` for quick inspection.
 
 - RTX 5090 / Qwen3-4B TG sweep:
-  `paper-benchmarks/results/sweep/20260508_111703_plus_115728_tg8192/`
+  `benchmarks/results/sweep/20260508_111703_plus_115728_tg8192/`
 - RTX 5090 / Qwen3-4B PP sweep:
-  `paper-benchmarks/results/sweep/20260508_114340/`
+  `benchmarks/results/sweep/20260508_114340/`
 - B200 / Qwen3-32B final results:
-  `paper-benchmarks/results/final/b200_qwen3_32b/`
+  `benchmarks/results/final/b200_qwen3_32b/`
 
 The B200 results are also indexed in
-[`paper-benchmarks/RESULTS.md`](paper-benchmarks/RESULTS.md).
+[`benchmarks/RESULTS.md`](benchmarks/RESULTS.md).
 
 For a direct Grout-only run:
 
 ```bash
-cargo build --release --features paper-benchmarks --bin grout_bench
+cargo build --release --features benchmarks --bin grout_bench
 target/release/grout_bench \
   --model "../hf_models/qwen3_4b" \
   --prompt "Hello, how are you?" \
@@ -156,5 +156,5 @@ target/release/grout_bench \
   --quiet
 ```
 
-See [`paper-benchmarks/README.md`](paper-benchmarks/README.md) for benchmark
+See [`benchmarks/README.md`](benchmarks/README.md) for benchmark
 policy, engine versions, and canonical run commands.

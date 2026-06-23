@@ -110,14 +110,14 @@ log "Benchmark: grout"
 
 if [[ -f "$GROUT_DIR/Cargo.toml" ]]; then
     echo "Building grout (release) …"
-    (cd "$GROUT_DIR" && cargo build --release --features paper-benchmarks --bin grout_bench 2>&1 | tail -3)
+    (cd "$GROUT_DIR" && cargo build --release --features benchmarks --bin grout_bench 2>&1 | tail -3)
 
     echo ""
     echo "Running grout  (prompt=\"$PROMPT\", max-new-tokens=$MAX_NEW_TOKENS, reps=$BENCH_REPS, warmup=$WARMUP_REPS) …"
     echo "─────────────────────────────────────────────────────────────"
     # Grout chat-templates the raw prompt internally to match the
     # 18-token pre-templated form the other bench scripts use by default.
-    (cd "$GROUT_DIR" && cargo run --release --features paper-benchmarks --bin grout_bench -- \
+    (cd "$GROUT_DIR" && cargo run --release --features benchmarks --bin grout_bench -- \
         --model "$MODEL_HF" \
         --prompt "$PROMPT" \
         --max-new-tokens "$MAX_NEW_TOKENS" \

@@ -81,7 +81,7 @@ echo "Using prompt file: $PROMPT_FILE  (pp≈${PP_LEN})"
 echo
 
 echo "Building grout…"
-(cd "$GROUT_DIR" && cargo build --release --features paper-benchmarks --bin grout_bench 2>&1 | tail -2)
+(cd "$GROUT_DIR" && cargo build --release --features benchmarks --bin grout_bench 2>&1 | tail -2)
 echo
 
 # Per-cell runner: returns decode_ms median from the 10 timed reps.

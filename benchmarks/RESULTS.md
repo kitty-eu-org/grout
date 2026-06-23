@@ -3,10 +3,10 @@
 Committed B200 Qwen3-32B result bundle:
 
 ```text
-paper-benchmarks/results/final/b200_qwen3_32b/
+benchmarks/results/final/b200_qwen3_32b/
 ```
 
-`paper-benchmarks/results/` is ignored by default; this final bundle is the
+`benchmarks/results/` is ignored by default; this final bundle is the
 paper handoff data. Timestamped sweep directories remain local scratch unless
 they are explicitly added.
 

@@ -7,7 +7,7 @@ It is intentionally separate from the normal `grout` inference CLI.
 
 | Path | Purpose |
 |---|---|
-| `src/bin/grout_bench.rs` | Grout timing binary. Built only with `--features paper-benchmarks`. |
+| `src/bin/grout_bench.rs` | Grout timing binary. Built only with `--features benchmarks`. |
 | `bench_sglang.py`, `bench_vllm.py`, `bench_llama_cpp.py`, `bench_trtllm.py` | Single-request wrappers for comparison engines. |
 | `sweep_tg*.sh` | Decode-length sweeps at fixed prompt length. |
 | `sweep_pp*.sh` | Prompt-length sweeps at fixed decode length. |
@@ -36,7 +36,7 @@ Override paths with `MODEL_HF`, `GGUF_PATH`, `BENCH_ENVS_DIR`, and
 ## Build Grout
 
 ```bash
-cargo build --release --features paper-benchmarks --bin grout_bench
+cargo build --release --features benchmarks --bin grout_bench
 ```
 
 ## Engine Versions
@@ -71,36 +71,36 @@ Create the Python environments outside this repository, for example under
 RTX 5090 / sm_120, Qwen3-4B:
 
 ```bash
-./paper-benchmarks/sweep_tg_sm120.sh
-./paper-benchmarks/sweep_pp_sm120.sh
+./benchmarks/sweep_tg_sm120.sh
+./benchmarks/sweep_pp_sm120.sh
 ```
 
 B200 / sm_100, Qwen3-32B:
 
 ```bash
-MODEL_HF=../hf_models/qwen3_32b ./paper-benchmarks/sweep_tg_sm100.sh
-MODEL_HF=../hf_models/qwen3_32b ./paper-benchmarks/sweep_pp_sm100.sh
+MODEL_HF=../hf_models/qwen3_32b ./benchmarks/sweep_tg_sm100.sh
+MODEL_HF=../hf_models/qwen3_32b ./benchmarks/sweep_pp_sm100.sh
 ```
 
 Smoke runs:
 
 ```bash
-BENCH_REPS=1 BENCH_REPS_LONG=1 WARMUP_REPS=1 ./paper-benchmarks/sweep_tg_sm120.sh
-BENCH_REPS=1 BENCH_REPS_LONG=1 WARMUP_REPS=1 ./paper-benchmarks/sweep_pp_sm120.sh
+BENCH_REPS=1 BENCH_REPS_LONG=1 WARMUP_REPS=1 ./benchmarks/sweep_tg_sm120.sh
+BENCH_REPS=1 BENCH_REPS_LONG=1 WARMUP_REPS=1 ./benchmarks/sweep_pp_sm120.sh
 ```
 
 Run one cell:
 
 ```bash
-SWEEP_TG_VALUES=8192 ./paper-benchmarks/sweep_tg_sm120.sh
-SWEEP_PP_VALUES=8192 ./paper-benchmarks/sweep_pp_sm120.sh
+SWEEP_TG_VALUES=8192 ./benchmarks/sweep_tg_sm120.sh
+SWEEP_PP_VALUES=8192 ./benchmarks/sweep_pp_sm120.sh
 ```
 
 Optional engines:
 
 ```bash
-SWEEP_ENABLE_LLAMA=1 ./paper-benchmarks/sweep_tg_sm120.sh
-SWEEP_ENABLE_TRTLLM=1 ./paper-benchmarks/sweep_tg_sm120.sh
+SWEEP_ENABLE_LLAMA=1 ./benchmarks/sweep_tg_sm120.sh
+SWEEP_ENABLE_TRTLLM=1 ./benchmarks/sweep_tg_sm120.sh
 ```
 
 TRT-LLM is only wired into the TG sweep.
@@ -110,7 +110,7 @@ TRT-LLM is only wired into the TG sweep.
 Each sweep writes:
 
 ```text
-paper-benchmarks/results/sweep/<timestamp>/
+benchmarks/results/sweep/<timestamp>/
   run.jsonl
   aggregate.csv
   aggregate.md

@@ -10,12 +10,12 @@ SHAPES="${SHAPES:-all}"
 MODEL_SIZE="${MODEL_SIZE:-4b}"
 COPIES="${COPIES:-1}"
 STAMP="$(date +%Y%m%d_%H%M%S)"
-OUT_DIR="${OUT_DIR:-paper-benchmarks/results/gemv/${STAMP}}"
+OUT_DIR="${OUT_DIR:-benchmarks/results/gemv/${STAMP}}"
 BIN="target/release/gemv_microbench"
 
 mkdir -p "$OUT_DIR"
 
-cargo build --release --features paper-benchmarks --bin gemv_microbench
+cargo build --release --features benchmarks --bin gemv_microbench
 
 CSV="${OUT_DIR}/gemv.csv"
 : > "$CSV"

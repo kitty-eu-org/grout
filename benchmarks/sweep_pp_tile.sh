@@ -50,7 +50,7 @@ else
 fi
 
 echo "Building grout…"
-(cd "$GROUT_DIR" && cargo build --release --features paper-benchmarks --bin grout_bench 2>&1 | tail -2)
+(cd "$GROUT_DIR" && cargo build --release --features benchmarks --bin grout_bench 2>&1 | tail -2)
 echo
 
 # Generate prompt files at exact token counts via make_prompts.py.

@@ -8,7 +8,7 @@
 # reset on exit. Warm steady-state ≈ 2400 MHz on RTX 5090 under load.
 #
 # Output layout:
-#   paper-benchmarks/results/sweep/<timestamp>/
+#   benchmarks/results/sweep/<timestamp>/
 #     run.jsonl              -- concatenation of all per-run JSON lines
 #     aggregate.csv          -- per-cell median + IQR
 #     aggregate.md           -- same, markdown table
@@ -178,7 +178,7 @@ nvidia-smi -q -d CLOCK 2>/dev/null | grep -A3 "Max Clocks" | head -8 || true
 # --------------------------------------------------------------------------
 log "Benchmark: grout"
 if [[ -f "$GROUT_DIR/Cargo.toml" ]]; then
-    (cd "$GROUT_DIR" && cargo build --release --features paper-benchmarks --bin grout_bench 2>&1 | tail -3)
+    (cd "$GROUT_DIR" && cargo build --release --features benchmarks --bin grout_bench 2>&1 | tail -3)
 
     # Prefill tile for the tg scan is always the small-pp shape because
     # pp is fixed at 18. These match the baked defaults but we pin them

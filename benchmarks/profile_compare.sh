@@ -33,8 +33,8 @@
 #   GROUT_BIN       grout binary            (default: target/release/grout_bench)
 #   BENCH_ENVS_DIR  bench venvs root        (default: ../bench_envs)
 #   SGLANG_PY       sglang python           (default: $BENCH_ENVS_DIR/sglang_env/bin/python3)
-#   BENCH_SGLANG    sglang bench script     (default: paper-benchmarks/bench_sglang.py)
-#   RESULTS_DIR     output dir              (default: paper-benchmarks/results/profile)
+#   BENCH_SGLANG    sglang bench script     (default: benchmarks/bench_sglang.py)
+#   RESULTS_DIR     output dir              (default: benchmarks/results/profile)
 #   CPU_MASK        taskset mask            (default: 0-7)
 #   REPS            measured decode reps    (default: 3)
 #   WARMUP_REPS     grout warmup reps       (default: 2)
@@ -112,7 +112,7 @@ if [[ "$SKIP_GROUT" != 1 ]]; then
         fi
     fi
     if [[ "$need_build" == 1 ]]; then
-        (cd "$GROUT_DIR" && cargo build --release --features paper-benchmarks --bin grout_bench) || {
+        (cd "$GROUT_DIR" && cargo build --release --features benchmarks --bin grout_bench) || {
             echo "ERROR: cargo build failed — fix the errors or set SKIP_GROUT=1"
             exit 1
         }
@@ -124,7 +124,7 @@ if [[ "$SKIP_LLAMA" != 1 ]]; then
     [[ -f "$GGUF_PATH" ]] || { echo "ERROR: GGUF not found: $GGUF_PATH"; exit 1; }
 fi
 if [[ "$SKIP_SGLANG" != 1 ]]; then
-    [[ -x "$SGLANG_PY" ]] || { echo "ERROR: sglang python not found at $SGLANG_PY — create the venv per paper-benchmarks/README.md or set SGLANG_PY/SKIP_SGLANG=1"; exit 1; }
+    [[ -x "$SGLANG_PY" ]] || { echo "ERROR: sglang python not found at $SGLANG_PY — create the venv per benchmarks/README.md or set SGLANG_PY/SKIP_SGLANG=1"; exit 1; }
     [[ -f "$BENCH_SGLANG" ]] || { echo "ERROR: sglang bench script not found at $BENCH_SGLANG"; exit 1; }
 fi
 
