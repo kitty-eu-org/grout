@@ -1,1 +1,6 @@
 /target
+
+# bench artifacts
+/bench/out
+/bench/.venv
+__pycache__
