@@ -118,17 +118,21 @@ const ARGMAX_BLOCK: usize = 128;
 // 1 (one query row per CTA). No env override — changing this would
 // require kernel rewrites.
 const ATTN_BM_DECODE: usize = 1;
-// KV-seq tile size for the decode attention kernel. 2026-04-20 sweep
-// at kv_len≈54 showed {16, 32, 64, 128} within ~1%; 16 was the most
-// consistent run-to-run. BN=256 regressed 13% from lane overhang. At
-// long kv_len the winner may shift — re-sweep via
-// ./benchmarks/sweep_tg_tile.sh. Override with GROUT_ATTN_BN_DECODE.
-const ATTN_BN_DECODE: usize = 16;
+// KV-seq tile size for the decode attention kernel. Default 32 as a
+// reasonable across-workload default for commercial hardware: the
+// 2026-04-20 tile sweep found {16,32,64,128} within ~1% at kv_len≈54 and
+// 32 the common-case winner for kv_len ≳ 128; very short kv (≲64) is a
+// hair faster at 16 but within run-to-run noise. BN=256 regressed 13%
+// (lane overhang). The paper sweep overrides this per-pp via
+// GROUT_ATTN_BN_DECODE (benchmarks/sweep_tg_tile.sh is the tile search).
+const ATTN_BN_DECODE: usize = 32;
 // Split-K decode parallelism: kv_len split into NUM_KV_SPLITS chunks,
-// each handled by a separate CTA. 8 tuned at tg=512; short kv prefers
-// fewer (avoids empty splits), long kv prefers more. Override with
-// GROUT_FMHA_NUM_KV_SPLITS.
-const FMHA_NUM_KV_SPLITS_DEFAULT: usize = 8;
+// each handled by a separate CTA. Default 16: the universal winner for
+// kv_len ≳ 164 in the tg tile sweep, and the best single compromise
+// across prefill and decode. Very short kv prefers fewer (4, avoids empty
+// splits) and very long kv prefers more (32 at pp=8192); the paper sweep
+// picks those per-pp via GROUT_FMHA_NUM_KV_SPLITS.
+const FMHA_NUM_KV_SPLITS_DEFAULT: usize = 16;
 // Software-pipelining depth + occupancy for fmha_decode_gqa_split.
 // Tuned via 2D (LAT × OCC) sweep on sm_120 at pp=18 tg=128:
 //   - Whole grid within 1.4% (compute-bound, like prefill).
