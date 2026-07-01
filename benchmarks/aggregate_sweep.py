@@ -319,12 +319,15 @@ def main():
 
         # Direct phase timers are optional and kept separate from e2e metrics.
         prefill_direct_med = None
+        prefill_direct_tps = None
         decode_direct_med = None
         decode_direct_tps = None
         prefills = [r["prefill_ms"] for r in records if "prefill_ms" in r]
         decodes = [r["decode_ms"] for r in records if "decode_ms" in r]
         if prefills:
             prefill_direct_med = statistics.median(prefills)
+            if prefill_direct_med > 0:
+                prefill_direct_tps = prompt_tokens / (prefill_direct_med / 1000.0)
         if decodes:
             decode_direct_med = statistics.median(decodes)
             if decode_direct_med > 0:
@@ -368,6 +371,7 @@ def main():
             "request_roofline_avg_kv_gb": roofline.get("request_roofline_avg_kv_gb"),
             "request_roofline_param_count": roofline.get("request_roofline_param_count"),
             "prefill_direct_median_ms": prefill_direct_med,
+            "prefill_direct_median_tps": prefill_direct_tps,
             "decode_direct_median_ms": decode_direct_med,
             "decode_direct_median_tps": decode_direct_tps,
         })
@@ -411,7 +415,7 @@ def main():
         "request_roofline_weight_gb", "request_roofline_avg_kv_gb",
         "request_roofline_param_count",
         "e2e_median_tps", "e2e_mean_tps",
-        "prefill_direct_median_ms",
+        "prefill_direct_median_ms", "prefill_direct_median_tps",
         "decode_direct_median_ms", "decode_direct_median_tps",
         "prefill_fit_ms", "decode_fit_ms_per_tok", "decode_fit_tps", "n_tg_points",
     ]
@@ -545,14 +549,18 @@ def main():
     lines.append("")
     lines.append("## Direct Phase Timings")
     lines.append("")
-    lines.append("Cells with `—` indicate the engine did not emit that same-request phase timer in run.jsonl. decode_direct_tps is generated_tokens / decode_ms.")
+    lines.append("Cells with `—` indicate the engine did not emit that same-request phase timer in run.jsonl. prefill_tps is prompt_tokens / prefill_ms; decode_direct_tps is generated_tokens / decode_ms. Note prefill_ms is pure prefill for grout/transformers but TTFT (prefill + 1 decode step) for vllm/sglang.")
     lines.append("")
-    lines.append("| engine | variant | pp | tg | prefill_ms (direct/TTFT) | decode_ms (direct) | decode_direct_tps |")
-    lines.append("|---|---|---:|---:|---:|---:|---:|")
+    lines.append("| engine | variant | pp | tg | prefill_ms (direct/TTFT) | prefill_tps | decode_ms (direct) | decode_direct_tps |")
+    lines.append("|---|---|---:|---:|---:|---:|---:|---:|")
     for r in cell_rows:
         pre = (
             f"{r['prefill_direct_median_ms']:.2f}"
             if r["prefill_direct_median_ms"] is not None else "—"
+        )
+        pre_tps = (
+            f"{r['prefill_direct_median_tps']:.1f}"
+            if r["prefill_direct_median_tps"] is not None else "—"
         )
         dec = (
             f"{r['decode_direct_median_ms']:.2f}"
@@ -566,7 +574,7 @@ def main():
             continue
         lines.append(
             f"| {r['engine']} | {r['variant']} | {r['pp']} | {r['tg']} "
-            f"| {pre} | {dec} | {dec_tps} |"
+            f"| {pre} | {pre_tps} | {dec} | {dec_tps} |"
         )
 
     args.markdown.write_text("\n".join(lines) + "\n")

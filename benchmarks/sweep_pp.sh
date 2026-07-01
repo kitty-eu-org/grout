@@ -41,7 +41,11 @@ fi
 BENCH_REPS="${BENCH_REPS:-10}"
 BENCH_REPS_LONG="${BENCH_REPS_LONG:-}"
 WARMUP_REPS="${WARMUP_REPS:-3}"
-MODEL_MAX_LEN="${MODEL_MAX_LEN:-16384}"
+# Engine context length must cover the largest pp in the sweep (+ tg + slack),
+# else vLLM/SGLang reject long prompts. Auto-grow with the sweep, 16384 floor.
+_MAX_PP=0; for _pp in "${PP_VALUES[@]}"; do (( _pp > _MAX_PP )) && _MAX_PP=$_pp; done
+_DEFAULT_MAX_LEN=$(( _MAX_PP + TG_FIXED + 256 )); (( _DEFAULT_MAX_LEN < 16384 )) && _DEFAULT_MAX_LEN=16384
+MODEL_MAX_LEN="${MODEL_MAX_LEN:-$_DEFAULT_MAX_LEN}"
 GROUT_MAX_SEQ_LEN="${GROUT_MAX_SEQ_LEN:-}"
 SGLANG_CONTEXT_LENGTH="${SGLANG_CONTEXT_LENGTH:-$MODEL_MAX_LEN}"
 VLLM_MAX_MODEL_LEN="${VLLM_MAX_MODEL_LEN:-$MODEL_MAX_LEN}"
